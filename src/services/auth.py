@@ -7,6 +7,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 
+import redis.asyncio as redis
+
 from src.database.db import get_db
 from src.conf.config import settings
 from src.services.users import UserService
@@ -21,6 +23,9 @@ class Hash:
     def get_password_hash(self, password: str):
         return self.pwd_context.hash(password)
 
+
+# Connecting to Redis
+redis_client = redis.from_url(settings.REDIS_URL)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -42,6 +47,11 @@ async def create_access_token(data: dict, expires_delta: Optional[int] = None):
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
+    if await redis_client.exists(f"bl:{token}"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked"
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
