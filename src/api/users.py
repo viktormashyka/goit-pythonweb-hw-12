@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, File, UploadFile
+from fastapi import APIRouter, Depends, Request, File, UploadFile, HTTPException
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,7 +8,7 @@ from src.services.dependencies import get_current_moderator_user, get_current_ad
 
 from src.conf.config import settings
 from src.database.db import get_db
-from src.database.models import User
+from src.database.models import User, UserRole
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -36,6 +36,10 @@ async def update_avatar_user(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+
+    if user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Недостатньо прав доступу для виконання цієї дії")
+
     avatar_url = UploadFileService(
         settings.CLOUDINARY_NAME,
         settings.CLOUDINARY_API_KEY,
