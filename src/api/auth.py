@@ -9,11 +9,11 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-from src.schemas import UserCreate, Token, User, RequestEmail
+from src.schemas import UserCreate, Token, User, RequestEmail, UserUpdatePassword
 
-from src.services.auth import create_access_token, Hash, get_email_from_token
+from src.services.auth import create_access_token, Hash, get_email_from_token, get_current_user
 from src.services.users import UserService
-from src.services.email import send_email
+from src.services.email import send_email, send_email_reset_password
 from src.database.db import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -107,3 +107,47 @@ async def request_email(
             send_email, user.email, user.username, request.base_url
         )
     return {"message": "Перевірте свою електронну пошту для підтвердження"}
+
+
+@router.post("/request_email_reset_password")
+async def request_email_reset_password(
+    body: RequestEmail,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(body.email)
+
+    if not user.confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Електронна адреса не підтверджена",
+        )
+
+    if user:
+        background_tasks.add_task(
+            send_email_reset_password, user.email, user.username, request.base_url
+        )
+    return {"message": "Перевірте свою електронну пошту для скидання пароля"}
+
+
+@router.get("/reset_password/{token}")
+async def reset_password(token: str, db: Session = Depends(get_db)):
+    email = await get_email_from_token(token)
+    user_service = UserService(db)
+    user = await user_service.get_user_by_email(email)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error"
+        )
+    await user_service.reset_password(email)
+    return {"message": "Пароль скинуто"}
+
+
+@router.patch("/update_password", response_model=User)
+async def update_password(body: UserUpdatePassword, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    user_service = UserService(db)
+    new_password = Hash().get_password_hash(body.password)
+
+    return await user_service.update_password(user.email, new_password)

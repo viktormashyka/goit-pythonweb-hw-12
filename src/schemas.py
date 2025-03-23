@@ -49,6 +49,9 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+class UserUpdatePassword(BaseModel):
+    password: str
+
 
 # Схема для токену
 class Token(BaseModel):
