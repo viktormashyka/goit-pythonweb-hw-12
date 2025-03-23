@@ -2,6 +2,8 @@ from datetime import date
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 
+from src.database.models import UserRole
+
 
 class ContactModel(BaseModel):
     first_name: str = Field(max_length=50)
@@ -48,6 +50,15 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+
+class UserResponse(User):
+    id: int
+    username: str
+    email: str
+    avatar: str | None
+    role: UserRole
+
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdatePassword(BaseModel):
     password: str
