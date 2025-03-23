@@ -51,6 +51,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
 
+
 class UserResponse(User):
     id: int
     username: str
@@ -59,6 +60,7 @@ class UserResponse(User):
     role: UserRole
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class UserUpdatePassword(BaseModel):
     password: str

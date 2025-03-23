@@ -41,6 +41,7 @@ async def send_email(email: EmailStr, username: str, host: str):
     except ConnectionErrors as err:
         print(err)
 
+
 async def send_email_reset_password(email: EmailStr, username: str, host: str):
     try:
         token_verification = create_email_token({"sub": email})

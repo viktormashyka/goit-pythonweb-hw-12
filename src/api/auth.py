@@ -9,9 +9,20 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-from src.schemas import UserCreate, Token, RequestEmail, UserUpdatePassword, UserResponse
+from src.schemas import (
+    UserCreate,
+    Token,
+    RequestEmail,
+    UserUpdatePassword,
+    UserResponse,
+)
 
-from src.services.auth import create_access_token, Hash, get_email_from_token, get_current_user
+from src.services.auth import (
+    create_access_token,
+    Hash,
+    get_email_from_token,
+    get_current_user,
+)
 from src.services.users import UserService
 from src.services.email import send_email, send_email_reset_password
 from src.database.db import get_db
@@ -21,7 +32,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 # Реєстрація користувача
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register_user(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
@@ -147,7 +160,11 @@ async def reset_password(token: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/update_password", response_model=UserResponse)
-async def update_password(body: UserUpdatePassword, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def update_password(
+    body: UserUpdatePassword,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     user_service = UserService(db)
     new_password = Hash().get_password_hash(body.password)
 

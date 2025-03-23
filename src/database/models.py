@@ -8,10 +8,12 @@ from enum import Enum
 class Base(DeclarativeBase):
     pass
 
+
 class UserRole(str, Enum):
     USER = "USER"
     MODERATOR = "MODERATOR"
     ADMIN = "ADMIN"
+
 
 class Contact(Base):
     __tablename__ = "contacts"
@@ -41,4 +43,3 @@ class User(Base):
     avatar = Column(String(255), nullable=True)
     confirmed = Column(Boolean, default=False)
     role = Column(SqlEnum(UserRole), default=UserRole.USER, nullable=False)
-

@@ -29,10 +29,7 @@ redis_client = redis.from_url(settings.REDIS_URL)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
-class AuthService:
-    def __init__(self, db: Session):
-        self.db = db
-        
+
 # define a function to generate a new access token
 async def create_access_token(data: dict, expires_delta: Optional[int] = None):
     to_encode = data.copy()
