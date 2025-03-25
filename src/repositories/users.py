@@ -76,8 +76,9 @@ class UserRepository:
         :param email: Email of the user to confirm.
         """
         user = await self.get_user_by_email(email)
-        user.confirmed = True
-        await self.db.commit()
+        if user:
+            user.confirmed = True
+            await self.db.commit()
 
     async def update_avatar_url(self, email: str, url: str) -> User:
         """
@@ -88,10 +89,11 @@ class UserRepository:
         :return: The updated User object.
         """
         user = await self.get_user_by_email(email)
-        user.avatar = url
-        await self.db.commit()
-        await self.db.refresh(user)
-        return user
+        if user:
+            user.avatar = url
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
 
     async def reset_password(self, email: str) -> User:
         """
@@ -101,10 +103,11 @@ class UserRepository:
         :return: The updated User object with password reset.
         """
         user = await self.get_user_by_email(email)
-        user.hashed_password = None
-        await self.db.commit()
-        await self.db.refresh(user)
-        return user
+        if user:
+            user.hashed_password = None
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
 
     async def update_password(self, email: str, password: str) -> User:
         """
@@ -115,7 +118,8 @@ class UserRepository:
         :return: The updated User object with new password.
         """
         user = await self.get_user_by_email(email)
-        user.hashed_password = password
-        await self.db.commit()
-        await self.db.refresh(user)
-        return user
+        if user:
+            user.hashed_password = password
+            await self.db.commit()
+            await self.db.refresh(user)
+            return user
