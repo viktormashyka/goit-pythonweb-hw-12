@@ -1,3 +1,5 @@
+# Dockerfile
+
 # Use the official Python image from the Docker Hub
 FROM python:3.12-slim
 
@@ -11,10 +13,8 @@ COPY . .
 ENV PYTHONPATH=/app
 
 # Install system dependencies and Python packages
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends iproute2 libpq-dev gcc build-essential && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends iproute2 libpq-dev gcc build-essential
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose the port that the app runs on
 EXPOSE 8000
