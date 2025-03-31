@@ -31,9 +31,21 @@ def test_get_upcoming_birthdays(client, get_token):
         data = response.json()
         assert isinstance(data, list)
 
+
 def test_read_contact(client, get_token):
     with patch("src.services.auth.redis_client") as redis_mock:
         redis_mock.exists.return_value = False
+        response = client.post(
+            "/api/contacts",
+            json={
+                "first_name": "John",
+                "last_name": "Doe",
+                "email": "john.doe@example.com",
+                "phone": "1234567890",
+                "birthday": "2000-01-01",
+            },
+            headers={"Authorization": f"Bearer {get_token}"},
+        )
         response = client.get(
             "/api/contacts/1", headers={"Authorization": f"Bearer {get_token}"}
         )

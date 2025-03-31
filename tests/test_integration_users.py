@@ -28,7 +28,6 @@ async def test_get_me_unauthorized(client):
 @patch("src.services.upload_file.UploadFileService.upload_file")
 @pytest.mark.asyncio
 async def test_update_avatar_user_non_admin_forbidden(mock_upload_file, client, get_token):
-    mock_upload_file.return_value = "http://example.com/avatar.jpg"
     headers = {"Authorization": f"Bearer {get_token}"}
     file_data = {"file": ("avatar.jpg", b"fake image content", "image/jpeg")}
 
@@ -39,7 +38,7 @@ async def test_update_avatar_user_non_admin_forbidden(mock_upload_file, client, 
         assert response.status_code == 403, response.text
         data = response.json()
         assert data["detail"] == "Недостатньо прав доступу для виконання цієї дії"
-        mock_upload_file.assert_called_once()
+        mock_upload_file.assert_not_called()
 
 
 @pytest.mark.asyncio
