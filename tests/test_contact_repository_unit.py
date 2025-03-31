@@ -4,9 +4,7 @@ from src.repositories.contacts import ContactRepository
 
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import date, timedelta
-from typing import List, Optional
-from sqlalchemy import select, and_, or_, extract
+from datetime import date
 from src.database.models import Contact, User
 from src.schemas import ContactModel, ContactUpdate
 
@@ -67,7 +65,7 @@ async def test_get_contacts(contacts_repository, mock_session, contact, user):
     mock_result.scalars.return_value.all.return_value = [contact]
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    contacts = await contacts_repository.get_contacts(0, 10, user)  # Added user argument
+    contacts = await contacts_repository.get_contacts(0, 10, user)
 
     assert len(contacts) == 1
     assert contacts[0].first_name == "test"

@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 # Add the root directory of the project to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,6 +40,14 @@ admin_user = {
     "role": UserRole.ADMIN,
 }
 
+moderator_user = {
+    "username": "mod",
+    "email": "mod@example.com",
+    "password": "modpass",
+    "role": UserRole.MODERATOR,
+}
+
+
 @pytest_asyncio.fixture(scope="module", autouse=True)
 async def init_models_wrap():
     async with engine.begin() as conn:
@@ -67,11 +75,22 @@ async def init_models_wrap():
         )
         session.add(current_admin)
 
+        mod_hash_password = Hash().get_password_hash(moderator_user["password"])
+        current_moderator = User(
+            username=moderator_user["username"],
+            email=moderator_user["email"],
+            hashed_password=mod_hash_password,
+            confirmed=True,
+            avatar="https://twitter.com/modavatar",
+            role=UserRole.MODERATOR,
+        )
+        session.add(current_moderator)
+
         await session.commit()
+
 
 @pytest.fixture(scope="module")
 def client():
-    # Dependency override
     async def override_get_db():
         async with TestingSessionLocal() as session:
             try:
@@ -81,15 +100,22 @@ def client():
                 raise
 
     app.dependency_overrides[get_db] = override_get_db
-
     yield TestClient(app)
+
 
 @pytest_asyncio.fixture()
 async def get_token():
     token = await create_access_token(data={"sub": test_user["username"]})
     return token
 
+
 @pytest_asyncio.fixture()
 async def get_admin_token():
     token = await create_access_token(data={"sub": admin_user["username"]})
+    return token
+
+
+@pytest_asyncio.fixture()
+async def get_moderator_token():
+    token = await create_access_token(data={"sub": moderator_user["username"]})
     return token
