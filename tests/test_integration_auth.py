@@ -71,3 +71,9 @@ def test_validation_error_login(client):
     data = response.json()
     assert "detail" in data
 
+
+def test_login_invalid_credentials(client):
+    response = client.post("api/auth/login", data={"username": "test", "password": "invalid_password"})
+    assert response.status_code == 401, response.text
+    data = response.json()
+    assert "detail" in data
