@@ -24,20 +24,22 @@ class ContactRepository:
 
     async def get_contacts(self, skip: int, limit: int, user: User) -> List[Contact]:
         """
-        Retrieve a list of contacts for a user with pagination.
+        Get a list of contacts for a specific user.
 
-        :param skip: The number of records to skip.
+        :param skip: The number of contacts to skip.
         :type skip: int
-        :param limit: The maximum number of records to return.
+        :param limit: The maximum number of contacts to return.
         :type limit: int
-        :param user: The user to retrieve contacts for.
+        :param user: The user to get the contacts for.
         :type user: User
-        :return: A list of contacts.
+        :return: The list of contacts.
         :rtype: List[Contact]
         """
-        stmt = select(Contact).filter_by(user=user).offset(skip).limit(limit)
-        contacts = await self.db.execute(stmt)
-        return contacts.scalars().all()
+        query = (
+            select(Contact).where(Contact.user_id == user.id).offset(skip).limit(limit)
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
 
     async def get_contact_by_id(self, contact_id: int, user: User) -> Contact | None:
         """
@@ -56,7 +58,7 @@ class ContactRepository:
 
     async def create_contact(self, body: ContactModel, user: User) -> Contact:
         """
-        Create a new contact for a user.
+        Create a new contact.
 
         :param body: The contact data.
         :type body: ContactModel
@@ -65,7 +67,9 @@ class ContactRepository:
         :return: The created contact.
         :rtype: Contact
         """
-        contact = Contact(**body.model_dump(exclude_unset=True), user=user)
+
+        contact = Contact(**body.model_dump())
+        contact.user_id = user.id
         self.db.add(contact)
         await self.db.commit()
         await self.db.refresh(contact)
@@ -86,7 +90,7 @@ class ContactRepository:
         if contact:
             await self.db.delete(contact)
             await self.db.commit()
-        return contact
+            return contact
 
     async def update_contact(
         self, contact_id: int, body: ContactUpdate, user: User
@@ -109,7 +113,7 @@ class ContactRepository:
                 setattr(contact, key, value)
             await self.db.commit()
             await self.db.refresh(contact)
-        return contact
+            return contact
 
     async def search_contacts(
         self,

@@ -38,7 +38,9 @@ async def update_avatar_user(
 ):
 
     if user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Недостатньо прав доступу для виконання цієї дії")
+        raise HTTPException(
+            status_code=403, detail="Недостатньо прав доступу для виконання цієї дії"
+        )
 
     avatar_url = UploadFileService(
         settings.CLOUDINARY_NAME,

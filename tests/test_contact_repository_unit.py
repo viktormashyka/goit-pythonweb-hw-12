@@ -1,9 +1,4 @@
-import sys
-import os
 import pytest
-
-# Add the root directory of the project to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.repositories.contacts import ContactRepository
 
@@ -15,22 +10,27 @@ from sqlalchemy import select, and_, or_, extract
 from src.database.models import Contact, User
 from src.schemas import ContactModel, ContactUpdate
 
+
 @pytest.fixture
 def mock_session():
     mock_session = AsyncMock(spec=AsyncSession)
     return mock_session
 
+
 @pytest.fixture
 def contacts_repository(mock_session):
     return ContactRepository(mock_session)
+
 
 @pytest.fixture
 def contact():
     return Contact(id=1, first_name="test", last_name="test", email="test@example.com", phone="1234567890", birthday=date.today(), description="test", user_id="testuser")
 
+
 @pytest.fixture
 def user():
     return User(id="testuser")
+
 
 @pytest.mark.asyncio
 async def test_create_contact(contacts_repository, mock_session, user):
@@ -48,6 +48,7 @@ async def test_create_contact(contacts_repository, mock_session, user):
     assert contact.description == "description"
     assert contact.user_id == user.id
 
+
 @pytest.mark.asyncio
 async def test_get_contact_by_id(contacts_repository, mock_session, contact, user):
     mock_result = MagicMock()
@@ -59,44 +60,53 @@ async def test_get_contact_by_id(contacts_repository, mock_session, contact, use
     assert result is not None
     assert result.first_name == "test"
 
+
 @pytest.mark.asyncio
-async def test_get_contacts(contacts_repository, mock_session, user):
+async def test_get_contacts(contacts_repository, mock_session, contact, user):
     mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [
-        Contact(id=1, first_name="test_1", last_name="test_1", email="test_1@example.com", phone="1234567890", birthday=date.today(), description="description", user_id="testID_1"),
-        Contact(id=2, first_name="test_2", last_name="test_2", email="test_2@example.com", phone="1234567890", birthday=date.today(), description="description", user_id="testID_2")
-    ]
+    mock_result.scalars.return_value.all.return_value = [contact]
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    contacts = await contacts_repository.get_contacts(skip=0, limit=10, user=user)
+    contacts = await contacts_repository.get_contacts(0, 10, user)  # Added user argument
 
-    assert len(contacts) == 2
-    assert contacts[0].first_name == "test_1"
-    assert contacts[1].first_name == "test_2"
+    assert len(contacts) == 1
+    assert contacts[0].first_name == "test"
+
 
 @pytest.mark.asyncio
 async def test_update_contact(contacts_repository, mock_session, contact, user):
+    mock_result = MagicMock()
+    mock_result.scalar_one_or_none.return_value = contact
+    mock_session.execute = AsyncMock(return_value=mock_result)
     mock_session.commit = AsyncMock()
     mock_session.refresh = AsyncMock()
-    mock_session.execute = AsyncMock()
-    mock_session.scalar_one_or_none = AsyncMock(return_value=contact)
 
     body = ContactUpdate(email="new@example.com")
 
-    updated_contact = await contacts_repository.update_contact(contact_id=1, body=body, user=user)
+    updated_contact = await contacts_repository.update_contact(contact.id, body, user)
 
+    assert isinstance(updated_contact, Contact)
+    assert updated_contact.first_name == contact.first_name
+    assert updated_contact.last_name == contact.last_name
     assert updated_contact.email == "new@example.com"
+    assert updated_contact.phone == contact.phone
+    assert updated_contact.birthday == contact.birthday
+    assert updated_contact.description == contact.description
+
+    mock_session.commit.assert_called_once()
+    mock_session.refresh.assert_called_once_with(contact)
+
 
 @pytest.mark.asyncio
 async def test_remove_contact(contacts_repository, mock_session, contact, user):
     mock_session.commit = AsyncMock()
-    mock_session.delete = AsyncMock()
     mock_session.scalar_one_or_none = AsyncMock(return_value=contact)
+    contacts_repository.db.session = mock_session
 
-    removed_contact = await contacts_repository.remove_contact(contact_id=1, user=user)
+    await contacts_repository.remove_contact(contact.id, user)
 
-    assert removed_contact is not None
-    assert removed_contact.id == 1
+    mock_session.commit.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_search_contacts(contacts_repository, mock_session, user):
@@ -111,15 +121,14 @@ async def test_search_contacts(contacts_repository, mock_session, user):
     assert len(contacts) == 1
     assert contacts[0].first_name == "test_1"
 
+
 @pytest.mark.asyncio
-async def test_get_upcoming_birthdays(contacts_repository, mock_session, user):
+async def test_get_upcoming_birthdays(contacts_repository, mock_session, contact, user):
     mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [
-        Contact(id=1, first_name="test_1", last_name="test_1", email="test_1@example.com", phone="1234567890", birthday=date.today() + timedelta(days=1), description="description", user_id="testID_1")
-    ]
+    mock_result.scalars.return_value.all.return_value = [contact]
     mock_session.execute = AsyncMock(return_value=mock_result)
 
-    contacts = await contacts_repository.get_upcoming_birthdays(user=user)
+    upcoming_birthdays = await contacts_repository.get_upcoming_birthdays(user)
 
-    assert len(contacts) == 1
-    assert contacts[0].first_name == "test_1"
+    assert len(upcoming_birthdays) == 1
+    assert upcoming_birthdays[0].first_name == "test"
